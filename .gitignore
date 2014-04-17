@@ -1,9 +1,16 @@
+# Project-specific
+execute
+
+# Vim swap
+*.swp
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 
 # C extensions
 *.so
+*.o
 
 # Distribution / packaging
 .Python
