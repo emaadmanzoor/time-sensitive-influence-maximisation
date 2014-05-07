@@ -1,56 +1,41 @@
-function [A_hat, total_obj] = estimate_network(A, C, num_nodes, horizon, type_diffusion)
+function [A_hat, total_obj] = estimate_network(A, C, num_nodes, horizon, type_diffusion, ...
+                                               num_cascades, A_potential, A_bad, A_hat)
 %%
-num_cascades = zeros(1,num_nodes);
-
-% A_potential(j,i) = sum_{all cascades} ( t_i - t_j )
-A_potential = sparse(zeros(size(A))); % A is nxn, n is the number of nodes
-
-% A_bad(i,j) = sum_{all cascades} ( T - t_i )
-%A_bad = sparse(zeros(size(A)));
-%A_hat = sparse(zeros(size(A))); % Estimated pair-wise transmission rates
-A_bad = zeros(size(A));
-A_hat = zeros(size(A));
 total_obj = 0;
 
-disp 'Creating structures...'
+% E-step
 
-for c=1:size(C, 1),
-    idx = find(C(c,:)~=-1); % used nodes, idx has node indices
-    [val, ord] = sort(C(c, idx)); % idx(ord(i)) will give node indices in increasing order of infection time
-                                  % val(i) = C(c, idx(ord(i))) gives the infection time of node idx(ord(i))
+% Create matrix SCurrent, SPrev to track the number of changed states
 
-    for i=2:length(val),
-        num_cascades(idx(ord(i))) = num_cascades(idx(ord(i))) + 1;
-        % Set A_potential(idx(ord(j)), idx(ord(i))) = sum of (t_i - t_j) for all t_j < t_i
-        for j=1:i-1,
-            if (strcmp(type_diffusion, 'exp'))
-                A_potential(idx(ord(j)), idx(ord(i))) = A_potential(idx(ord(j)), idx(ord(i)))+val(i)-val(j);
-            elseif (strcmp(type_diffusion, 'pl') && (val(i)-val(j)) > 1)
-                A_potential(idx(ord(j)), idx(ord(i))) = A_potential(idx(ord(j)), idx(ord(i)))+log(val(i)-val(j));
-            elseif (strcmp(type_diffusion, 'rayleigh'))
-                A_potential(idx(ord(j)), idx(ord(i))) = A_potential(idx(ord(j)), idx(ord(i)))+0.5*(val(i)-val(j))^2;
-            end
-        end
-    end
-    
-    for j=1:num_nodes,
-        if isempty(find(idx==j)) % Node j is not infected in cascade c
-            % Set A_bad(idx(ord(i)), j) = sum of (T - t_i) for all t_i in infected nodes in c
-            for i=1:length(val), % val has the infection times of the infected nodes in cascade c
-                if (strcmp(type_diffusion, 'exp'))
-                    A_bad(idx(ord(i)), j) = A_bad(idx(ord(i)), j) + (horizon-val(i));
-                elseif (strcmp(type_diffusion, 'pl') && (horizon-val(i)) > 1)
-                    A_bad(idx(ord(i)), j) = A_bad(idx(ord(i)), j) + log(horizon-val(i));
-                elseif (strcmp(type_diffusion, 'rayleigh'))
-                    A_bad(idx(ord(i)), j) = A_bad(idx(ord(i)), j) + 0.5*(horizon-val(i))^2;
-                end
-            end
-        end
-    end
-end
+% Evaluate tau(s), sigma(s) for the priors from StartTimes
+%
+% for each state s:
+%   find the tau(s) = MLE estimate of tau from StartTimes{s}
+%   find the sigma(s) = MLE estimate of sigma from StartTimes{s}
 
-disp 'Done creating structures.'
-%%
+% Evaluate f(\alpha_ij | state = s) for each s \in states
+% Results will be stored in A_hat itself
+%
+% for each state s
+%   Use A_potential{s}, A_bad{s}
+%   for i in nodes
+%     -- convex opt --
+%   end
+%   Write to A_hat{s}
+% end
+
+% M-step
+
+% Reassign states for all nodes
+% 
+% for c in cascades:
+%   for i in nodes of cascade c:
+%     likelihoods(s) = compute probability of s_ic given C(c,j)'s and alpha_hat
+%     priors(s) = compute prior of s_ic given tau(s), sigma(s)
+%     posteriors(s) = likelihoods * priors
+%     S(c,i) = argmax(posteriors)
+%   end
+% end
 
 % we will have a convex program per column
 

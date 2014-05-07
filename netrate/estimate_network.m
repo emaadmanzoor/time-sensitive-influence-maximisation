@@ -45,6 +45,9 @@ for c=1:size(C, 1),
     end
 end
 
+% A_bad(:,i) = ith column of A_bad contains (T - t_j) for all nodes
+% j that did not infect node i, summed over all cascades.
+
 % we will have a convex program per column
 
 for i=1:num_nodes,

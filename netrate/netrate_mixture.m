@@ -1,4 +1,5 @@
-function [A_hat, total_obj, pr, mae] = netrate_mixture(network, cascades, horizon, type_diffusion, num_nodes)
+function [A_hat, total_obj, pr, mae] = netrate_mixture(network, cascades, horizon, ...
+                                                       type_diffusion, num_nodes)
 %%
 min_tol = 1e-4;
 
@@ -11,13 +12,19 @@ disp 'Reading cascades...'
 C_full = create_cascades(cascades, num_nodes);
 
 % Truncate graph and cascades
-A = A_full(1:10, 1:10);
-C = C_full(:, 1:10);
+A = A_full;
+C = C_full;
+%num_nodes = 10
+%A = A_full(1:num_nodes, 1:num_nodes);
+%C = C_full(:, 1:num_nodes);
 
-%%
 disp 'Building data structures...'
-[A_hat, total_obj] = estimate_network_mixture(A, C, num_nodes, horizon, type_diffusion);
-%%
+[num_cascades, A_potential, A_bad, A_hat] = create_structures(A, C, num_nodes, ... 
+                                                              horizon, type_diffusion);
+
+disp 'Running optimization...'
+[A_hat, total_obj] = estimate_network_mixture(A, C, num_nodes, horizon, type_diffusion, ...
+                                              num_cascades, A_potential, A_bad, A_hat);
 
 if exist(network),
     mae = mean(abs(A_hat(A~=0)-A(A~=0))./A(A~=0)); % mae
